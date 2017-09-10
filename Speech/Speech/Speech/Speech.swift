@@ -75,15 +75,18 @@ class Speech: NSObject {
     }
     
     public func stop() {
-        
+        currentRepeatCount = 1
+        speechSynthier.stopSpeaking(at: AVSpeechBoundary.word)
     }
     
-    public func pause() {
-        
+    public func pause() -> Bool {
+        isPause = true
+        return speechSynthier.pauseSpeaking(at: AVSpeechBoundary.word)
     }
     
     public func continueSpeak() {
-        
+        isPause = false
+        speechSynthier.continueSpeaking()
     }
     
     fileprivate func startToSpeak() {
