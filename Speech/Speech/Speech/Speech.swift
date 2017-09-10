@@ -27,7 +27,7 @@ public struct SpeechItem {
     //读一段话前停顿
     public var preDelay: CGFloat = 0
     //读一段话后停顿
-    public var afterDelay: CGFloat = 0
+    public var postDelay: CGFloat = 0
     //重复次数
     public var repeatCount: Int = 1
     //内容
@@ -38,7 +38,9 @@ class Speech: NSObject {
     
     fileprivate var speechSynthier: AVSpeechSynthesizer!
     fileprivate var speechUtterance: AVSpeechUtterance!
-    fileprivate var speechVoice: AVSpeechSynthesisVoice!
+    fileprivate var speechVoice: AVSpeechSynthesisVoice! = {
+       return AVSpeechSynthesisVoice(language: "zh_CN")
+    }()
     fileprivate var currentSpeakIndex: Int?
     fileprivate var currentSpeakWords: String?
     fileprivate var currentRepeatCount: Int?
@@ -55,10 +57,21 @@ class Speech: NSObject {
     
     fileprivate func setDefault() {
         speechSynthier = AVSpeechSynthesizer()
+        speechSynthier.delegate = self
+        speechItem?.pitchMultiplier = 1
+        speechItem?.preDelay = 0
+        speechItem?.postDelay = 0
+        speechItem?.speed = 0.5
+        speechItem?.volume = 1
+        speechItem?.repeatCount = 1
+        currentSpeakIndex = speechItem?.repeatCount
+        isPause = true
     }
     
     public func start() {
-        
+        currentRepeatCount = speechItem?.repeatCount
+        isPause = false
+        startToSpeak()
     }
     
     public func stop() {
@@ -72,4 +85,23 @@ class Speech: NSObject {
     public func continueSpeak() {
         
     }
+    
+    fileprivate func startToSpeak() {
+        speechSynthier.stopSpeaking(at: AVSpeechBoundary.immediate)
+        guard let _ = currentSpeakWords else {
+            return
+        }
+        speechSynthier.speak(speechUtterance(speakWords: currentSpeakWords!))
+    }
+    
+    fileprivate func speechUtterance(speakWords: String) -> AVSpeechUtterance {
+        speechUtterance = AVSpeechUtterance(string: speakWords)
+        
+        return speechUtterance
+    }
+    
+}
+
+extension Speech: AVSpeechSynthesizerDelegate {
+    
 }
