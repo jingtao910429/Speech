@@ -107,4 +107,40 @@ class Speech: NSObject {
 
 extension Speech: AVSpeechSynthesizerDelegate {
     
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
+        self.delegate?.didStart(speech: self)
+        isComplete = true
+    }
+    
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        if currentRepeatCount == 1 {
+            self.delegate?.didFinish(speech: self)
+            currentRepeatCount = 1
+        } else {
+            currentSpeakWords = speechItem?.speakWords
+            currentRepeatCount = currentRepeatCount! - 1
+            if isPause {
+                let _ = pause()
+                return
+            }
+            
+            startToSpeak()
+        }
+    }
+    
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didPause utterance: AVSpeechUtterance) {
+        self.delegate?.didPause(speech: self)
+    }
+    
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didContinue utterance: AVSpeechUtterance) {
+        self.delegate?.didContinue(speech: self)
+    }
+    
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        self.delegate?.didCancel(speech: self)
+    }
+    
+    
+    
+    
 }
