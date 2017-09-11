@@ -47,9 +47,26 @@ class Speech: NSObject {
         }
     }
     //重复次数
-    public var repeatCount: Int = 1
+    public var repeatCount: Int = 1 {
+        didSet {
+            if let current = currentRepeatCount {
+                if repeatCount < current {
+                    currentRepeatCount = 1
+                } else {
+                    currentRepeatCount = repeatCount - current
+                }
+            }
+        }
+    }
     //内容
-    public var speakWords: String?
+    public var speakWords: String? {
+        didSet {
+            if let speakWords = speakWords {
+                currentSpeakWords = speakWords
+                startToSpeak()
+            }
+        }
+    }
     
     fileprivate var speechSynthier: AVSpeechSynthesizer!
     fileprivate var speechUtterance: AVSpeechUtterance!
