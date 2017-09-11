@@ -23,20 +23,29 @@ class Speech: NSObject {
     //读字速度 0-1
     public var speed: Float = 0.5 {
         didSet {
-            if self.isComplete {
-                self.isComplete = false
-                self.reset()
-            }
+            reset()
         }
     }
     //音色
-    public var pitchMultiplier: Float = 1
+    public var pitchMultiplier: Float = 1 {
+        didSet {
+            reset()
+        }
+    }
     //音量大小 0-1
     public var volume: Float = 1
     //读一段话前停顿
-    public var preDelay: TimeInterval = 0
+    public var preDelay: TimeInterval = 0 {
+        didSet {
+            reset()
+        }
+    }
     //读一段话后停顿
-    public var postDelay: TimeInterval = 0
+    public var postDelay: TimeInterval = 0 {
+        didSet {
+            reset()
+        }
+    }
     //重复次数
     public var repeatCount: Int = 1
     //内容
@@ -83,6 +92,10 @@ class Speech: NSObject {
     
     public func reset() {
         
+        guard self.isComplete else {
+            return
+        }
+        self.isComplete = false
         if let wordsTemp = currentSpeakWords {
             let words = NSString(string: wordsTemp)
             let lenght = words.length
