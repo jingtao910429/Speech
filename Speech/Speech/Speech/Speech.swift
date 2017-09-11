@@ -15,26 +15,32 @@ protocol SpeechDelegate {
     func didPause(speech: Speech)
     func didContinue(speech: Speech)
     func didCancel(speech: Speech)
+    func speechSpeakRange(speech: Speech, range: NSRange)
 }
 
-public struct SpeechItem {
+class Speech: NSObject {
+    
     //读字速度 0-1
-    public var speed: CGFloat = 0.5
+    public var speed: Float = 0.5 {
+        didSet {
+            if self.isComplete {
+                self.isComplete = false
+                self.reset()
+            }
+        }
+    }
     //音色
-    public var pitchMultiplier: CGFloat = 1
+    public var pitchMultiplier: Float = 1
     //音量大小 0-1
-    public var volume: CGFloat = 1
+    public var volume: Float = 1
     //读一段话前停顿
-    public var preDelay: CGFloat = 0
+    public var preDelay: TimeInterval = 0
     //读一段话后停顿
-    public var postDelay: CGFloat = 0
+    public var postDelay: TimeInterval = 0
     //重复次数
     public var repeatCount: Int = 1
     //内容
     public var speakWords: String?
-}
-
-class Speech: NSObject {
     
     fileprivate var speechSynthier: AVSpeechSynthesizer!
     fileprivate var speechUtterance: AVSpeechUtterance!
@@ -47,7 +53,6 @@ class Speech: NSObject {
     fileprivate var isComplete: Bool = false
     fileprivate var isPause: Bool = false
     
-    public var speechItem: SpeechItem?
     public var delegate: SpeechDelegate?
     
     override init() {
@@ -58,18 +63,38 @@ class Speech: NSObject {
     fileprivate func setDefault() {
         speechSynthier = AVSpeechSynthesizer()
         speechSynthier.delegate = self
-        speechItem?.pitchMultiplier = 1
-        speechItem?.preDelay = 0
-        speechItem?.postDelay = 0
-        speechItem?.speed = 0.5
-        speechItem?.volume = 1
-        speechItem?.repeatCount = 1
-        currentSpeakIndex = speechItem?.repeatCount
+        self.pitchMultiplier = 1
+        self.preDelay = 0
+        self.postDelay = 0
+        self.speed = 0.5
+        self.volume = 1
+        self.repeatCount = 1
+        currentSpeakIndex = self.repeatCount
         isPause = true
     }
     
+    private func subString(string: String) -> String {
+        let head = string.range(of: "http")
+        let end = string.range(of: "html")
+        let headIndex = string.index((head?.lowerBound)!, offsetBy: -1)
+        let endIndex = string.index((end?.upperBound)!, offsetBy: 1)
+        return string.substring(with: headIndex..<endIndex)
+    }
+    
+    public func reset() {
+        
+        if let wordsTemp = currentSpeakWords {
+            let words = NSString(string: wordsTemp)
+            let lenght = words.length
+            currentSpeakWords = words.substring(with: NSMakeRange(currentSpeakIndex!, lenght - currentSpeakIndex!))
+            startToSpeak()
+        }
+        
+    }
+    
+    
     public func start() {
-        currentRepeatCount = speechItem?.repeatCount
+        currentRepeatCount = self.repeatCount
         isPause = false
         startToSpeak()
     }
@@ -99,7 +124,12 @@ class Speech: NSObject {
     
     fileprivate func speechUtterance(speakWords: String) -> AVSpeechUtterance {
         speechUtterance = AVSpeechUtterance(string: speakWords)
-        
+        speechUtterance.rate = speed
+        speechUtterance.pitchMultiplier = pitchMultiplier
+        speechUtterance.postUtteranceDelay = postDelay
+        speechUtterance.preUtteranceDelay = preDelay
+        speechUtterance.volume = volume
+        speechUtterance.voice = speechVoice
         return speechUtterance
     }
     
@@ -117,7 +147,7 @@ extension Speech: AVSpeechSynthesizerDelegate {
             self.delegate?.didFinish(speech: self)
             currentRepeatCount = 1
         } else {
-            currentSpeakWords = speechItem?.speakWords
+            currentSpeakWords = self.speakWords
             currentRepeatCount = currentRepeatCount! - 1
             if isPause {
                 let _ = pause()
@@ -140,7 +170,10 @@ extension Speech: AVSpeechSynthesizerDelegate {
         self.delegate?.didCancel(speech: self)
     }
     
-    
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
+        currentSpeakIndex = characterRange.location + characterRange.length
+        self.delegate?.speechSpeakRange(speech: self, range: characterRange)
+    }
     
     
 }
